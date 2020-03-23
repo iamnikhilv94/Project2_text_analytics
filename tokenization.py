@@ -19,36 +19,71 @@ data.isnull().sum()
 data.dropna(axis=0,how='any',inplace=True)
 data.shape
 data.dtypes
+#displays the number of comments for each division
 
-text="""Hello Mr. Smith, how are you doing today? The weather is great, and city is awesome.The sky is pinkish-blue. You shouldn't eat cardboard"""
-tokenized_text=sent_tokenize(text)
-print(tokenized_text)
+plt.title('Number of comments in each Division')
+data['Division'].value_counts().plot.bar(color='Green')
+plt.xlabel('Division')
+plt.ylabel('Number of comments')
 
-tokenized_word=word_tokenize(text)
-tokenized_word[10]
+data.info()
+data.groupby('Division').count()
 
-tokenized_word[10]='Rahul'
-distribution=FreqDist(tokenized_word)
-type(distribution)
-distribution.most_common(3)
+from sklearn.feature_extraction.text import CountVectorizer
+from nltk.tokenize import RegexpTokenizer
 
-distribution.plot(30,cumulative=False)
-plt.show()
+# token=RegexpTokenizer(r'[a-zA-Z0-9+')
+# type(token)
+# cv=CountVectorizer(lowercase=True,stop_words='english',ngram_range=(1,1),tokenizer=token.tokenize)
+# text_counts=cv.fit_transform(data.words)
 
-### stop words
+data['words']=data.Comments.str.strip().str.split('[\W_]+')
+data.head()
+data.Comments[0]
 
-stop_words=set(stopwords.words("English"))
-type(stop_words)
-print(stop_words)
+##creating iterations to flatten the array of words 
 
-filtered_words=[]
-for w in tokenized_word:
-    if w not in stop_words:
-        filtered_words.append(w)
-    else:
-        print("These words were filtered out",w)
+rows=list()
+for row in data[['Division','words']].iterrows():
+    r=row[1]
+    for word in r.words:
+        rows.append((r.Division,word))
 
-print("Tokenized words",filtered_words)
+#words dataframe contains Divison and Words from comments    
+words=pd.DataFrame(rows,columns=['Division','word'])
+words.head()
+words.shape
+
+#removing the spaces from word list
+words = words[words.word.str.len()>0]
+
+#converting all words to lower case
+words['word']=words.word.str.lower()
+words.shape
+words.info()
+
+#importing the stopwords using scikit feautre extraction
+
+from sklearn.feature_extraction import text
+my_stopwords={'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','st'}
+stop=text.ENGLISH_STOP_WORDS.union(my_stopwords)
+
+a=pd.DataFrame(words)
+a.info()
+#removing stopwords from the list of words
+a['word']=a['word'].apply(lambda x: ' '.join([word for word in x.split() if word not in (stop)]))
+a.shape
+a.info()
+
+counts=a.groupby('Division')\
+    .word.value_counts()\
+        .to_frame()\
+            .rename(columns={'word':'count_words'})
+
+counts.head()
+type(counts)
+
+counts.to_csv('Term_document.csv',index=True)
 
 
 
